@@ -1,58 +1,11 @@
 window.addEventListener("load", init, false);
 
-function creatParalaxScene() {
-  var loader = new THREE.GLTFLoader();
-
-  // Optional: Provide a DRACOLoader instance to decode compressed mesh data
-  var dracoLoader = new THREE.DRACOLoader();
-  dracoLoader.setDecoderPath("/examples/js/libs/draco/");
-  loader.setDRACOLoader(dracoLoader);
-
-  // Load a glTF resource
-  loader.load(
-    // resource URL
-    "../scene.glb",
-    // called when the resource is loaded
-    function(gltf) {
-      scene.add(gltf.scene);
-
-      gltf.animations; // Array<THREE.AnimationClip>
-      gltf.scene; // THREE.Scene
-      gltf.scenes; // Array<THREE.Scene>
-      gltf.cameras; // Array<THREE.Camera>
-      gltf.asset; // Object
-    },
-    // called while loading is progressing
-    function(xhr) {
-      console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-    },
-    // called when loading has errors
-    function(error) {
-      console.log("An error happened");
-    }
-  );
-}
-
 function init(event) {
-  // set up the scene, the camera and the renderer
   createScene();
-  createOrbitControls();
-
-  creatParalaxScene();
-
-  // add the lights
-  // createLights();
-
-  // add the objects
-
-  // createBg();
-  // createSky();
-  // createPlayer();
-
-  // createPlayerFront();
-  mouse();
-  // start a loop tha will update the objects' positions
-  // and render the scene on each frame
+  createBg();
+  createGrass();
+  createPlayers();
+  document.addEventListener("mousemove", onMouseMove, false);
   loop();
 }
 
@@ -68,23 +21,18 @@ var scene,
   controls,
   container;
 
+var center = new THREE.Vector3();
+
 function createScene() {
-  // Get the width and the height of the screen,
-  // use them to set up the aspect ratio of the camera
-  // and the size of the renderer.
   HEIGHT = window.innerHeight;
   WIDTH = window.innerWidth;
 
   // Create the scene
   scene = new THREE.Scene();
 
-  // Add a fog effect to the scene; same color as the
-  // background color used in the style sheet
-  // scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
-
   // Create the camera
   aspectRatio = WIDTH / HEIGHT;
-  fieldOfView = 75;
+  fieldOfView = 45;
   nearPlane = 1;
   farPlane = 10000;
   camera = new THREE.PerspectiveCamera(
@@ -94,39 +42,22 @@ function createScene() {
     farPlane
   );
 
-  // Set the position of the camera
-  camera.position.x = 0;
-  camera.position.z = 10;
-  camera.position.y = 0;
-
   // Create the renderer
   renderer = new THREE.WebGLRenderer({
-    // Allow transparency to show the gradient background
-    // we defined in the CSS
     alpha: true,
-
-    // Activate the anti-aliasing; this is less performant,
-    // but, as our project is low-poly based, it should be fine :)
     antialias: true
   });
 
-  // Define the size of the renderer; in this case,
-  // it will fill the entire screen
+  var axesHelper = new THREE.AxesHelper(5);
+  scene.add(axesHelper);
+
+  camera.position.set(-100, 0, 0);
+  camera.lookAt(center);
+
   renderer.setSize(WIDTH, HEIGHT);
 
-  // Enable shadow rendering
-  renderer.shadowMap.enabled = true;
-
-  renderer.gammaOutput = true;
-  renderer.gammaFactor = 2.2;
-
-  // Add the DOM element of the renderer to the
-  // container we created in the HTML
   container = document.getElementById("world");
   container.appendChild(renderer.domElement);
-
-  // Listen to the screen: if the user resizes it
-  // we have to update the camera and the renderer size
   window.addEventListener("resize", handleWindowResize, false);
 }
 
@@ -139,145 +70,172 @@ function handleWindowResize() {
   camera.updateProjectionMatrix();
 }
 
-var hemisphereLight, shadowLight;
+var hemisphereLight, shadowLight, light, hlight;
 
 function createLights() {
   // A hemisphere light is a gradient colored light;
   // the first parameter is the sky color, the second parameter is the ground color,
   // the third parameter is the intensity of the light
-  hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.9);
+  // hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.9);
 
   // A directional light shines from a specific direction.
   // It acts like the sun, that means that all the rays produced are parallel.
-  shadowLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  // shadowLight = new THREE.DirectionalLight(0xffffff, 0.9);
 
   // Set the direction of the light
-  shadowLight.position.set(150, 350, 350);
+  // shadowLight.position.set(150, 350, 350);
 
   // Allow shadow casting
-  shadowLight.castShadow = true;
+  // shadowLight.castShadow = true;
 
   // define the visible area of the projected shadow
-  shadowLight.shadow.camera.left = -400;
-  shadowLight.shadow.camera.right = 400;
-  shadowLight.shadow.camera.top = 400;
-  shadowLight.shadow.camera.bottom = -400;
-  shadowLight.shadow.camera.near = 1;
-  shadowLight.shadow.camera.far = 1000;
+  // shadowLight.shadow.camera.left = -400;
+  // shadowLight.shadow.camera.right = 400;
+  // shadowLight.shadow.camera.top = 400;
+  // shadowLight.shadow.camera.bottom = -400;
+  // shadowLight.shadow.camera.near = 1;
+  // shadowLight.shadow.camera.far = 1000;
 
   // define the resolution of the shadow; the higher the better,
   // but also the more expensive and less performant
-  shadowLight.shadow.mapSize.width = 2048;
-  shadowLight.shadow.mapSize.height = 2048;
+  // shadowLight.shadow.mapSize.width = 2048;
+  // shadowLight.shadow.mapSize.height = 2048;
 
   // to activate the lights, just add them to the scene
-  scene.add(hemisphereLight);
-  scene.add(shadowLight);
+  // scene.add(hemisphereLight);
+  // scene.add(shadowLight);
+
+  // shadowLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  hlight = new THREE.AmbientLight(0x404040, 100);
+  scene.add(hlight);
+
+  light = new THREE.PointLight(0xc4c4c4, 10);
+  light.position.set(0, 300, 500);
+  scene.add(light);
 }
 
 //creating scene objects
 
-var floor;
-var floorWidth = 5120 / 2;
-var floorHeight = 1808 / 2;
-var aspectH = 1080;
-
-function createSky() {
-  var geometry = new THREE.PlaneGeometry(floorWidth, floorHeight, 1);
-  var material = new THREE.MeshBasicMaterial({
-    map: new THREE.TextureLoader().load("img/sky.jpg")
-  });
-  floor = new THREE.Mesh(geometry, material);
-  // plane.rotation.x = -Math.PI / 2;
-  floor.position.z = -300;
-  scene.add(floor);
-}
-
 var bg;
-var bgWidth = 5120 / 2;
-var bgHeight = 2880 / 2;
+var bgW = 190;
+var bgAspectRatio = 56.25;
+var bgH = (bgW * bgAspectRatio) / 100;
 
 function createBg() {
-  var geometry = new THREE.PlaneGeometry(bgWidth, bgHeight, 1);
+  var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
   var material = new THREE.MeshBasicMaterial({
-    map: new THREE.TextureLoader().load("img/bg.png"),
+    map: new THREE.TextureLoader().load("img/bg.jpg"),
     transparent: true
   });
+
+  material.encoding = THREE.sRGBEncoding;
+
+  material.anisotopy = 16;
+
   bg = new THREE.Mesh(geometry, material);
-  bg.position.z = -200;
+  bg.position.x = -10;
+  bg.position.y = 0;
+  bg.position.z = 0;
+
+  bg.rotation.y = -Math.PI / 2;
 
   scene.add(bg);
 }
 
-var player;
-var playerWidth = 1344 / 2;
-var playerHeight = 1822 / 2;
+var grass;
+var grassW = 190;
+var grassAspectRatio = 20.7;
+var grassH = (grassW * grassAspectRatio) / 100;
 
-function createPlayer() {
-  var geometry = new THREE.PlaneGeometry(playerWidth, playerHeight, 1);
+function createGrass() {
+  var geometry = new THREE.PlaneGeometry(grassW, grassH, 1);
+  var material = new THREE.MeshBasicMaterial({
+    map: new THREE.TextureLoader().load("img/grass.png"),
+    transparent: true
+  });
+
+  material.encoding = THREE.sRGBEncoding;
+
+  material.anisotopy = 16;
+
+  grass = new THREE.Mesh(geometry, material);
+  grass.position.x = -20;
+  grass.position.y = -32;
+  grass.position.z = 0;
+
+  grass.rotation.y = -Math.PI / 2;
+
+  scene.add(grass);
+}
+
+var players;
+var playersW = 20;
+var playersAspectRatio = 135.56;
+var playersH = (playersW * playersAspectRatio) / 100;
+
+function createPlayers() {
+  var geometry = new THREE.PlaneGeometry(playersW, playersH, 1);
   var material = new THREE.MeshBasicMaterial({
     map: new THREE.TextureLoader().load("img/players.png"),
     transparent: true
   });
-  player = new THREE.Mesh(geometry, material);
-  player.position.z = -100;
-  player.position.y = -playerHeight / 2;
 
-  scene.add(player);
-}
-function createOrbitControls() {
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  material.encoding = THREE.sRGBEncoding;
+
+  material.anisotopy = 16;
+
+  players = new THREE.Mesh(geometry, material);
+  players.position.x = -30;
+  players.position.y = -20;
+  players.position.z = 0;
+
+  players.rotation.y = -Math.PI / 2;
+
+  scene.add(players);
 }
 
 function loop() {
-  // Rotate the propeller, the sea and the sky
-
-  // update the plane on each frame
-
-  // bg.position.y = this.currentY * 10;
-  // floor.position.y = this.currentY * 50;
-  // player.position.y = this.currentY * 100;
-
-  // render the scene
   renderer.render(scene, camera);
-  controls.update();
+  drag(mouse.x, mouse.y);
+  console.log(mouse.x, mouse.y);
 
-  // camera.position.x = this.currentX * 10;
-  // camera.position.y = -this.currentY * 10;
-
-  // floor.rotation.x = -this.currentY / 50;
-  // floor.rotation.y = this.currentX / 50;
-
-  // player.rotation.y = this.currentX / 20;
-  // player.rotation.x = -this.currentY / 20;
-
-  // console.log(camera.position.x);
-
-  // camera.position.y = this.currentX;
-
-  // call the loop function again
   requestAnimationFrame(loop);
 }
 
-this.currentX = 0;
-this.currentY = 0;
-
-function mouse() {
-  let w = window.innerWidth / 2;
-  let h = window.innerHeight / 2;
-
-  let that = this;
-
-  document.addEventListener("mousemove", function(e) {
-    that.mouseX = (e.clientX - w) / w;
-    that.mouseY = (e.clientY - h) / h;
-    // console.log(that.mouseX, that.mouseY);
-    that.currentX = that.mouseX;
-    that.currentY = that.mouseY;
-  });
+var frameId = 0;
+function redraw() {
+  cancelAnimationFrame(frameId);
+  frameId = requestAnimationFrame(loop);
 }
 
-// function rotateCamera(ev) {
-//   camera.rotation.x = 0.09;
-//   camera.rotation.y = 0.09;
-// }
+const mouse = new THREE.Vector2();
+
+function onMouseMove(event) {
+  mouse.x = -1 + event.clientX / (WIDTH / 2);
+  mouse.y = 1 - event.clientY / (HEIGHT / 2);
+}
+
+function drag(deltaX, deltaY) {
+  // console.log(deltaX, deltaY);
+
+  var radPerPixel = Math.PI / 450,
+    deltaPhi = radPerPixel * deltaY,
+    deltaTheta = radPerPixel * deltaX,
+    pos = camera.position.sub(center),
+    radius = pos.length(),
+    theta = Math.acos(pos.z / radius),
+    phi = Math.atan2(pos.y, pos.x);
+
+  // Subtract deltaTheta and deltaPhi
+  theta = Math.min(Math.max(theta - deltaTheta, 0), Math.PI);
+  phi -= deltaPhi;
+
+  // Turn back into Cartesian coordinates
+  pos.x = radius * Math.sin(theta) * Math.cos(phi);
+  pos.y = radius * Math.sin(theta) * Math.sin(phi);
+  pos.z = radius * Math.cos(theta);
+
+  camera.position.add(center);
+  camera.lookAt(center);
+  redraw();
+}
