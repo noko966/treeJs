@@ -2,9 +2,15 @@ window.addEventListener("load", init, false);
 
 function init(event) {
   createScene();
-  createBg();
-  createGrass();
-  createPlayers();
+  // createSky();
+  // createGrass();
+  // createSeats();
+
+  // createPlayer2();
+  // createPlayers();
+  // createBg();
+
+  createShader();
   document.addEventListener("mousemove", onMouseMove, false);
   loop();
 }
@@ -51,7 +57,7 @@ function createScene() {
   var axesHelper = new THREE.AxesHelper(5);
   scene.add(axesHelper);
 
-  camera.position.set(-100, 0, 0);
+  camera.position.set(-120, 0, 0);
   camera.lookAt(center);
 
   renderer.setSize(WIDTH, HEIGHT);
@@ -70,62 +76,42 @@ function handleWindowResize() {
   camera.updateProjectionMatrix();
 }
 
-var hemisphereLight, shadowLight, light, hlight;
-
-function createLights() {
-  // A hemisphere light is a gradient colored light;
-  // the first parameter is the sky color, the second parameter is the ground color,
-  // the third parameter is the intensity of the light
-  // hemisphereLight = new THREE.HemisphereLight(0xaaaaaa, 0x000000, 0.9);
-
-  // A directional light shines from a specific direction.
-  // It acts like the sun, that means that all the rays produced are parallel.
-  // shadowLight = new THREE.DirectionalLight(0xffffff, 0.9);
-
-  // Set the direction of the light
-  // shadowLight.position.set(150, 350, 350);
-
-  // Allow shadow casting
-  // shadowLight.castShadow = true;
-
-  // define the visible area of the projected shadow
-  // shadowLight.shadow.camera.left = -400;
-  // shadowLight.shadow.camera.right = 400;
-  // shadowLight.shadow.camera.top = 400;
-  // shadowLight.shadow.camera.bottom = -400;
-  // shadowLight.shadow.camera.near = 1;
-  // shadowLight.shadow.camera.far = 1000;
-
-  // define the resolution of the shadow; the higher the better,
-  // but also the more expensive and less performant
-  // shadowLight.shadow.mapSize.width = 2048;
-  // shadowLight.shadow.mapSize.height = 2048;
-
-  // to activate the lights, just add them to the scene
-  // scene.add(hemisphereLight);
-  // scene.add(shadowLight);
-
-  // shadowLight = new THREE.DirectionalLight(0xffffff, 0.9);
-  hlight = new THREE.AmbientLight(0x404040, 100);
-  scene.add(hlight);
-
-  light = new THREE.PointLight(0xc4c4c4, 10);
-  light.position.set(0, 300, 500);
-  scene.add(light);
-}
-
 //creating scene objects
-
 var bg;
 var bgW = 190;
 var bgAspectRatio = 56.25;
 var bgH = (bgW * bgAspectRatio) / 100;
 
+var sky;
+function createSky() {
+  var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
+  var material = new THREE.MeshBasicMaterial({
+    map: new THREE.TextureLoader().load("img/Sky.png"),
+    alphaMap: new THREE.TextureLoader().load("img/Sky_alpha.jpg"),
+    // alphaTest: 0.5,
+    transparent: true
+    // blending: THREE.AdditiveBlending
+  });
+
+  material.encoding = THREE.sRGBEncoding;
+
+  material.anisotopy = 16;
+
+  sky = new THREE.Mesh(geometry, material);
+  sky.position.x = -10;
+  sky.position.y = 0;
+  sky.position.z = 0;
+
+  sky.rotation.y = -Math.PI / 2;
+
+  scene.add(sky);
+}
+
 function createBg() {
   var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
   var material = new THREE.MeshBasicMaterial({
-    map: new THREE.TextureLoader().load("img/bg.jpg"),
-    transparent: true
+    map: new THREE.TextureLoader().load("img/bg.jpg")
+    // blending: THREE.AdditiveBlending
   });
 
   material.encoding = THREE.sRGBEncoding;
@@ -142,15 +128,69 @@ function createBg() {
   scene.add(bg);
 }
 
-var grass;
-var grassW = 190;
-var grassAspectRatio = 20.7;
-var grassH = (grassW * grassAspectRatio) / 100;
+var shader, shaderMaterial;
+function createShader() {
+  var texture1 = new THREE.TextureLoader().load("../img/bg.jpg");
+  var texture2 = new THREE.TextureLoader().load("../img/seats.png");
+
+  var geometry = new THREE.PlaneBufferGeometry(bgW, bgH, 30, 30);
+  shaderMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      texture1: {
+        value: texture1
+      },
+      texture2: {
+        value: texture2
+      },
+      progress: {
+        type: "f",
+        value: 0
+      }
+    },
+    vertexShader: document.getElementById("vertexshader").textContent,
+    fragmentShader: document.getElementById("fragmentshader").textContent,
+    wireframe: false
+  });
+  shader = new THREE.Mesh(geometry, shaderMaterial);
+  shader.position.x = -5;
+  shader.position.y = 0;
+  shader.position.z = 0;
+
+  shader.rotation.y = -Math.PI / 2;
+
+  scene.add(shader);
+}
+
+var grass, seats;
+
+function createSeats() {
+  var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
+  var material = new THREE.MeshBasicMaterial({
+    map: new THREE.TextureLoader().load("img/seats.png"),
+    alphaMap: new THREE.TextureLoader().load("img/seats_alpha.jpg"),
+    // alphaTest: 0.5,
+    transparent: true
+  });
+
+  material.encoding = THREE.sRGBEncoding;
+
+  material.anisotopy = 16;
+
+  seats = new THREE.Mesh(geometry, material);
+  seats.position.x = -20;
+  seats.position.z = 0;
+
+  seats.rotation.y = -Math.PI / 2;
+
+  scene.add(seats);
+}
 
 function createGrass() {
-  var geometry = new THREE.PlaneGeometry(grassW, grassH, 1);
+  var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
   var material = new THREE.MeshBasicMaterial({
-    map: new THREE.TextureLoader().load("img/grass.png"),
+    map: new THREE.TextureLoader().load("img/bg.jpg"),
+    alphaMap: new THREE.TextureLoader().load("img/grass_alpha.jpg"),
+    // alphaTest: 0.5,
     transparent: true
   });
 
@@ -159,8 +199,8 @@ function createGrass() {
   material.anisotopy = 16;
 
   grass = new THREE.Mesh(geometry, material);
-  grass.position.x = -20;
-  grass.position.y = -32;
+  grass.position.x = -15;
+  // grass.position.y = -32;
   grass.position.z = 0;
 
   grass.rotation.y = -Math.PI / 2;
@@ -168,16 +208,38 @@ function createGrass() {
   scene.add(grass);
 }
 
-var players;
-var playersW = 20;
-var playersAspectRatio = 135.56;
-var playersH = (playersW * playersAspectRatio) / 100;
+var players, player2;
+
+function createPlayer2() {
+  var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
+  var material = new THREE.MeshBasicMaterial({
+    map: new THREE.TextureLoader().load("img/player_2.png"),
+    alphaMap: new THREE.TextureLoader().load("img/player_2_alpha.jpg"),
+    transparent: true
+    // alphaTest: 0.5
+  });
+
+  material.encoding = THREE.sRGBEncoding;
+
+  material.anisotopy = 16;
+
+  player2 = new THREE.Mesh(geometry, material);
+  player2.position.x = -22;
+  // players.position.y = -20;
+  player2.position.z = 0;
+
+  player2.rotation.y = -Math.PI / 2;
+
+  scene.add(player2);
+}
 
 function createPlayers() {
-  var geometry = new THREE.PlaneGeometry(playersW, playersH, 1);
+  var geometry = new THREE.PlaneGeometry(bgW, bgH, 1);
   var material = new THREE.MeshBasicMaterial({
     map: new THREE.TextureLoader().load("img/players.png"),
+    alphaMap: new THREE.TextureLoader().load("img/players_alpha.jpg"),
     transparent: true
+    // alphaTest: 0.5
   });
 
   material.encoding = THREE.sRGBEncoding;
@@ -185,8 +247,8 @@ function createPlayers() {
   material.anisotopy = 16;
 
   players = new THREE.Mesh(geometry, material);
-  players.position.x = -30;
-  players.position.y = -20;
+  players.position.x = -21;
+  // players.position.y = -20;
   players.position.z = 0;
 
   players.rotation.y = -Math.PI / 2;
@@ -196,8 +258,26 @@ function createPlayers() {
 
 function loop() {
   renderer.render(scene, camera);
-  drag(mouse.x, mouse.y);
-  console.log(mouse.x, mouse.y);
+  // drag(mouse.x, mouse.y);
+
+  // var x = camera.position.x;
+  // var z = camera.position.z;
+
+  // mouse.x -= (mouse.x - mouse2.x) * 0.02;
+  // mouse.y -= (mouse.y - mouse2.y) * 0.02;
+
+  camera.position.z = mouse.x * 5;
+  camera.position.y = -mouse.y * 5;
+  camera.lookAt(center);
+
+  shaderMaterial.uniforms.progress.value = mouse.x;
+
+  console.log(shaderMaterial.uniforms.progress.value);
+
+  // camera.position.y = z * Math.cos(mouse.y) - x * Math.sin(mouse.y);
+  // camera.position.z = z * Math.cos(mouse.y) - x * Math.sin(mouse.y);
+
+  // console.log(mouse.x, mouse.y);
 
   requestAnimationFrame(loop);
 }
@@ -209,33 +289,38 @@ function redraw() {
 }
 
 const mouse = new THREE.Vector2();
+const mouse2 = new THREE.Vector2();
 
 function onMouseMove(event) {
-  mouse.x = -1 + event.clientX / (WIDTH / 2);
-  mouse.y = 1 - event.clientY / (HEIGHT / 2);
+  mouse.x = (event.clientX - WIDTH / 2) / (WIDTH / 2);
+  mouse.y = (event.clientY - HEIGHT / 2) / (HEIGHT / 2);
+  mouse2.x = mouse.x / 10;
+  mouse2.y = mouse.y / 10;
 }
 
-function drag(deltaX, deltaY) {
-  // console.log(deltaX, deltaY);
+// function drag(deltaX, deltaY) {
+//   console.log(deltaX, deltaY);
 
-  var radPerPixel = Math.PI / 450,
-    deltaPhi = radPerPixel * deltaY,
-    deltaTheta = radPerPixel * deltaX,
-    pos = camera.position.sub(center),
-    radius = pos.length(),
-    theta = Math.acos(pos.z / radius),
-    phi = Math.atan2(pos.y, pos.x);
+//   var radPerPixel = Math.PI / 450,
+//     deltaPhi = radPerPixel * deltaY,
+//     deltaTheta = radPerPixel * deltaX,
+//     pos = camera.position.sub(center),
+//     radius = pos.length(),
+//     theta = Math.acos(pos.z / radius),
+//     phi = Math.atan2(pos.y, pos.x);
 
-  // Subtract deltaTheta and deltaPhi
-  theta = Math.min(Math.max(theta - deltaTheta, 0), Math.PI);
-  phi -= deltaPhi;
+//   // console.log(pos);
 
-  // Turn back into Cartesian coordinates
-  pos.x = radius * Math.sin(theta) * Math.cos(phi);
-  pos.y = radius * Math.sin(theta) * Math.sin(phi);
-  pos.z = radius * Math.cos(theta);
+//   // Subtract deltaTheta and deltaPhi
+//   // theta = Math.min(Math.max(theta - deltaTheta, 0), Math.PI);
+//   // phi -= deltaPhi;
 
-  camera.position.add(center);
-  camera.lookAt(center);
-  redraw();
-}
+//   // Turn back into Cartesian coordinates
+//   pos.x = radius * Math.sin(theta) * Math.cos(phi);
+//   pos.y = radius * Math.sin(theta) * Math.sin(phi);
+//   pos.z = radius * Math.cos(theta);
+
+//   camera.position.add(center);
+//   camera.lookAt(center);
+//   redraw();
+// }

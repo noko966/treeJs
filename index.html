@@ -23,12 +23,34 @@
     <div id="world"></div>
     
 </body>
+
+<script type="x-shader/x-vertex" id="vertexshader">
+    varying vec2 vUv;
+    void main() {
+        vec3 newPos = position;
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+    }
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentshader">
+    uniform sampler2D texture1;
+    uniform sampler2D texture2;
+
+    uniform float progress;
+    varying vec2 vUv;
+    
+
+    void main() {
+        vec4 img1 = texture2D(texture1,vUv);
+        vec4 img2 = texture2D(texture2,vUv);
+
+
+        gl_FragColor = texture2D(texture1, vUv - fract(vUv * vec2(10.,10.)) * progress * 0.1 );
+    }
+</script>
+
 <script src="./js/tree.js"></script>
-<script src="./js/gtfLoader.js"></script>
-<script src="./js/dracoLoader.js"></script>
-
-
-<script src="./js/OrbitControls.js" type="module"></script>
 
 <script src="./js/main.js"></script>
 </html>
